@@ -1,80 +1,72 @@
-// ⚠️ Ikkada mee Gemini API key paste cheyyandi
-const API_KEY = AQ.Ab8RN6LO1ErUuBgqqY4fBasT0DjDcOcwHWnQ0Q5L9hvCIvxSfw;
 
-const chat = document.getElementById('chat');
-const input = document.getElementById('msg');
-const sendBtn = document.getElementById('send');
+const chat = document.getElementById("chat");
+const input = document.getElementById("msg");
+const sendBtn = document.getElementById("send");
 
-sendBtn.onclick = () => {
-    sendMessage();
-};
+sendBtn.addEventListener("click", sendMessage);
 
-input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
+input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
         sendMessage();
     }
 });
 
 async function sendMessage() {
-    const t = input.value.trim();
-    if (!t) return;
-    
-    add('YOU: ' + t, 'user');
-    input.value = '';
-    
-    add('J.A.R.V.I.S: Processing...', 'ai');
-    const loadingElement = chat.lastChild;
+    const message = input.value.trim();
 
-    let attempts = 3;
-    let success = false;
-    let data = null;
+    if (!message) return;
 
-    while (attempts > 0 && !success) {
-        try {
-            const res = await fetch(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: t }] }]
-                    })
-                }
+    add("YOU: " + message, "user");
+
+    input.value = "";
+    sendBtn.disabled = true;
+
+    const loading = add(
+        "J.A.R.V.I.S: Connecting to AI...",
+        "ai"
+    );
+
+    try {
+        // Secure backend API endpoint
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message: message
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Server connection failed"
             );
-            data = await res.json();
-
-            if (res.ok && data.candidates && data.candidates[0]) {
-                success = true;
-            } else {
-                attempts--;
-                if (attempts > 0) {
-                    loadingElement.innerText = 'J.A.R.V.I.S: High demand, retrying...';
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-            }
-        } catch (e) {
-            attempts--;
-            if (attempts === 0) {
-                loadingElement.innerText = 'J.A.R.V.I.S: Network Error: ' + e.message;
-                return;
-            }
         }
-    }
 
-    if (success && data.candidates && data.candidates[0]) {
-        const replyText = data.candidates[0].content.parts[0].text;
-        loadingElement.innerText = 'J.A.R.V.I.S: ' + replyText;
-    } else {
-        loadingElement.innerText = 'J.A.R.V.I.S: Error connecting to brain.';
+        loading.innerText =
+            "J.A.R.V.I.S: " + data.reply;
+
+    } catch (error) {
+        loading.innerText =
+            "J.A.R.V.I.S: Error - " + error.message;
+
+    } finally {
+        sendBtn.disabled = false;
+        input.focus();
     }
 }
 
 function add(text, who) {
-    const d = document.createElement('div');
-    d.className = 'msg ' + who;
-    d.innerText = text;
-    chat.appendChild(d);
+    const div = document.createElement("div");
+
+    div.className = "msg " + who;
+    div.innerText = text;
+
+    chat.appendChild(div);
     chat.scrollTop = chat.scrollHeight;
+
+    return div;
 }
-
-
