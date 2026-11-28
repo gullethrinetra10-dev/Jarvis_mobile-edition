@@ -1,1 +1,112 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JARVIS AI Assistant</title>
 
+  <link rel="stylesheet" href="style.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+</head>
+
+<body>
+  <div class="background">
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+  </div>
+
+  <main class="app">
+    <header class="header">
+      <div class="header-top">
+        <div class="logo">
+          <span class="logo-ring"></span>
+          <h1>JARVIS</h1>
+        </div>
+
+        <button class="settings-btn" id="settingsBtn" type="button">
+          Settings
+        </button>
+      </div>
+
+      <p class="subtitle">Your Personal AI Assistant</p>
+    </header>
+
+    <section class="assistant-card">
+      <div class="assistant-face" id="assistantFace">
+        <div class="core"></div>
+      </div>
+
+      <p class="status" id="statusText">
+        Enter your OpenAI API key to activate JARVIS.
+      </p>
+    </section>
+
+    <section class="chat-section">
+      <div class="chat-box" id="chatBox">
+        <div class="message assistant">
+          <p>Hello! I am JARVIS. Add your API key and ask me anything.</p>
+        </div>
+      </div>
+
+      <form class="input-area" id="chatForm">
+        <input
+          type="text"
+          id="userInput"
+          placeholder="Type your message..."
+          autocomplete="off"
+        />
+        <button type="submit" id="sendBtn">Send</button>
+      </form>
+    </section>
+
+    <section class="quick-actions">
+      <button class="action-btn" data-command="Hello JARVIS">Hello</button>
+      <button class="action-btn" data-command="Explain AI in simple words">
+        Explain AI
+      </button>
+      <button class="action-btn" data-command="Give me a study plan for JavaScript">
+        Study Plan
+      </button>
+      <button class="action-btn" data-command="Tell me a joke">Joke</button>
+      <button class="action-btn" data-command="Clear chat">Clear</button>
+    </section>
+  </main>
+
+  <!-- API Key Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-box">
+      <h2>API Settings</h2>
+
+      <label for="apiKeyInput">OpenAI API Key</label>
+      <input
+        type="password"
+        id="apiKeyInput"
+        placeholder="sk-..."
+        autocomplete="off"
+      />
+
+      <p class="warning">
+        API key browser localStorage lo save avutundi. Public website lo share cheyyakudadu.
+      </p>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-btn" id="closeSettingsBtn">
+          Close
+        </button>
+        <button type="button" class="primary-btn" id="saveKeyBtn">
+          Save Key
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
