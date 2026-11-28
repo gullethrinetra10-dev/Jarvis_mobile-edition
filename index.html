@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JARVIS AI Assistant</title>
+  <title>JARVIS AI Assistant - Gemini</title>
 
   <link rel="stylesheet" href="style.css" />
 
@@ -35,7 +35,7 @@
         </button>
       </div>
 
-      <p class="subtitle">Your Personal AI Assistant</p>
+      <p class="subtitle">Your Personal AI Assistant - Powered by Gemini</p>
     </header>
 
     <section class="assistant-card">
@@ -44,14 +44,14 @@
       </div>
 
       <p class="status" id="statusText">
-        Enter your OpenAI API key to activate JARVIS.
+        Enter your Gemini API key to activate JARVIS.
       </p>
     </section>
 
     <section class="chat-section">
       <div class="chat-box" id="chatBox">
         <div class="message assistant">
-          <p>Hello! I am JARVIS. Add your API key and ask me anything.</p>
+          <p>Hello! I am JARVIS. Add your Gemini API key and ask me anything.</p>
         </div>
       </div>
 
@@ -68,10 +68,10 @@
 
     <section class="quick-actions">
       <button class="action-btn" data-command="Hello JARVIS">Hello</button>
-      <button class="action-btn" data-command="Explain AI in simple words">
+      <button class="action-btn" data-command="Explain AI in simple Telugu">
         Explain AI
       </button>
-      <button class="action-btn" data-command="Give me a study plan for JavaScript">
+      <button class="action-btn" data-command="Give me a JavaScript study plan">
         Study Plan
       </button>
       <button class="action-btn" data-command="Tell me a joke">Joke</button>
@@ -79,16 +79,15 @@
     </section>
   </main>
 
-  <!-- API Key Settings Modal -->
   <div class="modal" id="settingsModal">
     <div class="modal-box">
-      <h2>API Settings</h2>
+      <h2>Gemini API Settings</h2>
 
-      <label for="apiKeyInput">OpenAI API Key</label>
+      <label for="apiKeyInput">Gemini API Key</label>
       <input
         type="password"
         id="apiKeyInput"
-        placeholder="sk-..."
+        placeholder="Paste your Gemini API key"
         autocomplete="off"
       />
 
