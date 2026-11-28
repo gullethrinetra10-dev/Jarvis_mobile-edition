@@ -1,184 +1,290 @@
-const API_KEY_STORAGE_NAME = "jarvis_gemini_api_key";
-const GEMINI_MODEL = "gemini-2.5-flash";
 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+"use strict";
 
-const chatBox = document.getElementById("chatBox");
-const chatForm = document.getElementById("chatForm");
-const userInput = document.getElementById("userInput");
-const statusText = document.getElementById("statusText");
-const assistantFace = document.getElementById("assistantFace");
+// ===============================
+// J.A.R.V.I.S AI ASSISTANT
+// Gemini Brain + Voice Assistant
+// ===============================
 
-const settingsBtn = document.getElementById("settingsBtn");
-const settingsModal = document.getElementById("settingsModal");
-const apiKeyInput = document.getElementById("apiKeyInput");
-const saveKeyBtn = document.getElementById("saveKeyBtn");
-const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+const apiKeyInput = document.getElementById("apiKey");
+const startBtn = document.getElementById("start-btn");
+const statusText = document.getElementById("status");
+const responseText = document.getElementById("response");
 
-let chatHistory = [];
+// Gemini model
+const MODEL = "gemini-2.5-flash";
 
-function getSavedApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE_NAME);
-}
+// Gemini API endpoint
+const API_URL =
+  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-function saveApiKey(key) {
-  localStorage.setItem(API_KEY_STORAGE_NAME, key);
-}
+// Voice recognition
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function openSettings() {
-  apiKeyInput.value = getSavedApiKey() || "";
-  settingsModal.classList.add("active");
-}
+let recognition = null;
+let isListening = false;
+let isProcessing = false;
 
-function closeSettings() {
-  settingsModal.classList.remove("active");
-}
+// ===============================
+// 1. LOAD SAVED API KEY
+// ===============================
 
-function addMessage(text, sender) {
-  const message = document.createElement("div");
-  message.className = `message ${sender}`;
+apiKeyInput.value = localStorage.getItem("jarvis_key") || "";
 
-  const paragraph = document.createElement("p");
-  paragraph.textContent = text;
+// ===============================
+// 2. SAVE API KEY
+// ===============================
 
-  message.appendChild(paragraph);
-  chatBox.appendChild(message);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+apiKeyInput.addEventListener("change", () => {
+  const key = apiKeyInput.value.trim();
 
-function updateStatus() {
-  const apiKey = getSavedApiKey();
-
-  if (apiKey) {
-    statusText.textContent = "JARVIS activated with Gemini. Ask me anything.";
+  if (key) {
+    localStorage.setItem("jarvis_key", key);
+    statusText.textContent = "API Key Saved";
   } else {
-    statusText.textContent = "Enter your Gemini API key to activate JARVIS.";
+    localStorage.removeItem("jarvis_key");
   }
-}
+});
 
-async function askGemini(userMessage) {
-  const apiKey = getSavedApiKey();
+// ===============================
+// 3. VOICE RECOGNITION SETUP
+// ===============================
 
-  if (!apiKey) {
-    openSettings();
-    return "Please add your Gemini API key in Settings.";
-  }
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
 
-  chatHistory.push({
-    role: "user",
-    parts: [{ text: userMessage }]
-  });
+  recognition.lang = "en-IN";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
 
-  const requestBody = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: "You are JARVIS, a helpful AI assistant. Reply clearly, friendly, and concisely."
-          }
-        ]
-      },
-      ...chatHistory
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1024
-    }
+  recognition.onstart = () => {
+    isListening = true;
+    startBtn.textContent = "Listening...";
+    statusText.textContent = "Listening for your command...";
   };
 
-  const response = await fetch(GEMINI_API_URL, {
+  recognition.onresult = (event) => {
+    const command = event.results[0][0].transcript;
+
+    statusText.textContent = "You said: " + command;
+
+    processCommand(command);
+  };
+
+  recognition.onerror = (event) => {
+    isListening = false;
+    startBtn.textContent = "Start Listening";
+
+    statusText.textContent =
+      "Voice Error: " + event.error;
+
+    console.error("Speech recognition error:", event.error);
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    startBtn.textContent = "Start Listening";
+  };
+
+} else {
+  statusText.textContent =
+    "Voice recognition not supported. Use Chrome.";
+}
+
+// ===============================
+// 4. START / STOP LISTENING
+// ===============================
+
+startBtn.addEventListener("click", () => {
+
+  if (!recognition) {
+    statusText.textContent =
+      "Please use a supported browser like Chrome.";
+    return;
+  }
+
+  if (isProcessing) {
+    statusText.textContent =
+      "J.A.R.V.I.S is processing your command.";
+    return;
+  }
+
+  if (isListening) {
+    recognition.stop();
+    return;
+  }
+
+  try {
+    recognition.start();
+  } catch (error) {
+    statusText.textContent =
+      "Voice Error: " + error.message;
+  }
+});
+
+// ===============================
+// 5. PROCESS USER COMMAND
+// ===============================
+
+async function processCommand(command) {
+
+  const apiKey = apiKeyInput.value.trim();
+
+  if (!apiKey) {
+    statusText.textContent =
+      "Please enter your Gemini API Key.";
+
+    apiKeyInput.focus();
+    return;
+  }
+
+  if (!command.trim()) {
+    statusText.textContent = "Please say something.";
+    return;
+  }
+
+  isProcessing = true;
+  startBtn.disabled = true;
+
+  statusText.textContent = "J.A.R.V.I.S is thinking...";
+  responseText.textContent = "";
+
+  try {
+
+    const reply = await askGemini(command, apiKey);
+
+    responseText.textContent = reply;
+    statusText.textContent = "J.A.R.V.I.S is ready.";
+
+    speak(reply);
+
+  } catch (error) {
+
+    console.error(error);
+
+    statusText.textContent = "Error: " + error.message;
+
+    responseText.textContent =
+      "Sorry, I could not process your request.";
+
+  } finally {
+
+    isProcessing = false;
+    startBtn.disabled = false;
+
+  }
+}
+
+// ===============================
+// 6. GEMINI AI BRAIN
+// ===============================
+
+async function askGemini(command, apiKey) {
+
+  const response = await fetch(API_URL, {
+
     method: "POST",
+
     headers: {
       "Content-Type": "application/json",
       "x-goog-api-key": apiKey
     },
-    body: JSON.stringify(requestBody)
+
+    body: JSON.stringify({
+
+      systemInstruction: {
+        parts: [{
+          text:
+            "You are J.A.R.V.I.S, a helpful AI assistant. " +
+            "Reply naturally and clearly. " +
+            "If the user speaks Telugu, reply in Telugu. " +
+            "Do not claim to have performed actions that you cannot perform."
+        }]
+      },
+
+      contents: [{
+        role: "user",
+        parts: [{
+          text: command
+        }]
+      }],
+
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024
+      }
+
+    })
+
   });
 
   const data = await response.json();
 
   if (!response.ok) {
-    const errorMessage =
-      data?.error?.message || "Gemini API request failed. Check your API key.";
-    throw new Error(errorMessage);
+    const message =
+      data.error?.message || "Gemini API request failed.";
+
+    throw new Error(message);
   }
 
   const reply =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-    "JARVIS could not generate a response.";
+    data.candidates?.[0]?.content?.parts
+      ?.map(part => part.text || "")
+      .join("")
+      .trim();
 
-  chatHistory.push({
-    role: "model",
-    parts: [{ text: reply }]
-  });
+  if (!reply) {
+    throw new Error("Gemini returned an empty response.");
+  }
 
   return reply;
 }
 
-chatForm.addEventListener("submit", async function (event) {
-  event.preventDefault();
+// ===============================
+// 7. TEXT TO SPEECH
+// ===============================
 
-  const message = userInput.value.trim();
+function speak(text) {
 
-  if (!message) return;
-
-  if (message.toLowerCase() === "clear chat") {
-    chatBox.innerHTML = "";
-    chatHistory = [];
-    addMessage("Chat cleared. How can I help you?", "assistant");
-    userInput.value = "";
+  if (!("speechSynthesis" in window)) {
+    statusText.textContent =
+      "Text-to-speech is not supported.";
     return;
   }
 
-  addMessage(message, "user");
-  userInput.value = "";
+  window.speechSynthesis.cancel();
 
-  statusText.textContent = "JARVIS is thinking...";
-  assistantFace.style.boxShadow = "0 0 50px rgba(0, 229, 255, 0.7)";
+  const utterance = new SpeechSynthesisUtterance(text);
 
-  try {
-    const reply = await askGemini(message);
-    addMessage(reply, "assistant");
-  } catch (error) {
-    addMessage(`Error: ${error.message}`, "assistant");
-  } finally {
-    statusText.textContent = getSavedApiKey()
-      ? "JARVIS activated with Gemini. Ask me anything."
-      : "Enter your Gemini API key to activate JARVIS.";
+  utterance.lang = "en-IN";
+  utterance.rate = 1;
+  utterance.pitch = 1;
 
-    assistantFace.style.boxShadow = "0 0 35px rgba(0, 229, 255, 0.35)";
-  }
-});
+  utterance.onstart = () => {
+    statusText.textContent = "J.A.R.V.I.S is speaking...";
+  };
 
-settingsBtn.addEventListener("click", openSettings);
-closeSettingsBtn.addEventListener("click", closeSettings);
+  utterance.onend = () => {
+    statusText.textContent = "J.A.R.V.I.S is ready.";
+  };
 
-saveKeyBtn.addEventListener("click", function () {
-  const key = apiKeyInput.value.trim();
+  utterance.onerror = (event) => {
+    console.error("Speech synthesis error:", event.error);
+    statusText.textContent =
+      "Reply received, but voice playback failed.";
+  };
 
-  if (!key) {
-    alert("Please enter your Gemini API key.");
-    return;
-  }
+  window.speechSynthesis.speak(utterance);
+}
 
-  saveApiKey(key);
-  updateStatus();
-  closeSettings();
-  addMessage("Gemini API key saved in this browser. JARVIS is ready.", "assistant");
-});
+// ===============================
+// 8. TEXT COMMAND SUPPORT
+// ===============================
 
-document.querySelectorAll(".action-btn").forEach(function (button) {
-  button.addEventListener("click", function () {
-    userInput.value = button.dataset.command;
-    chatForm.dispatchEvent(new Event("submit"));
-  });
-});
+window.executeCommand = function (command) {
+  processCommand(command);
+};
 
-settingsModal.addEventListener("click", function (event) {
-  if (event.target === settingsModal) {
-    closeSettings();
-  }
-});
-
-updateStatus();
+console.log("J.A.R.V.I.S script loaded successfully.");
