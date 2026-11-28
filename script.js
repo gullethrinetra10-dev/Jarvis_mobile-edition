@@ -1,5 +1,7 @@
-const API_KEY_STORAGE_NAME = "jarvis_openai_api_key";
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const API_KEY_STORAGE_NAME = "jarvis_gemini_api_key";
+const GEMINI_MODEL = "gemini-2.5-flash";
+
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const chatBox = document.getElementById("chatBox");
 const chatForm = document.getElementById("chatForm");
@@ -48,62 +50,67 @@ function updateStatus() {
   const apiKey = getSavedApiKey();
 
   if (apiKey) {
-    statusText.textContent = "JARVIS activated. Ask me anything.";
+    statusText.textContent = "JARVIS activated with Gemini. Ask me anything.";
   } else {
-    statusText.textContent = "Enter your OpenAI API key to activate JARVIS.";
+    statusText.textContent = "Enter your Gemini API key to activate JARVIS.";
   }
 }
 
-async function askOpenAI(userMessage) {
+async function askGemini(userMessage) {
   const apiKey = getSavedApiKey();
 
   if (!apiKey) {
     openSettings();
-    return "Please add your OpenAI API key in Settings.";
+    return "Please add your Gemini API key in Settings.";
   }
 
   chatHistory.push({
     role: "user",
-    content: userMessage
+    parts: [{ text: userMessage }]
   });
 
-  const response = await fetch(OPENAI_API_URL, {
+  const requestBody = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: "You are JARVIS, a helpful AI assistant. Reply clearly, friendly, and concisely."
+          }
+        ]
+      },
+      ...chatHistory
+    ],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 1024
+    }
+  };
+
+  const response = await fetch(GEMINI_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`
+      "x-goog-api-key": apiKey
     },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are JARVIS, a helpful, friendly AI assistant. Reply clearly and concisely."
-        },
-        ...chatHistory
-      ],
-      temperature: 0.7
-    })
+    body: JSON.stringify(requestBody)
   });
 
   const data = await response.json();
 
   if (!response.ok) {
     const errorMessage =
-      data?.error?.message || "API request failed. Check your API key.";
+      data?.error?.message || "Gemini API request failed. Check your API key.";
     throw new Error(errorMessage);
   }
 
-  const reply = data.choices?.[0]?.message?.content;
-
-  if (!reply) {
-    throw new Error("JARVIS could not generate a response.");
-  }
+  const reply =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+    "JARVIS could not generate a response.";
 
   chatHistory.push({
-    role: "assistant",
-    content: reply
+    role: "model",
+    parts: [{ text: reply }]
   });
 
   return reply;
@@ -131,14 +138,14 @@ chatForm.addEventListener("submit", async function (event) {
   assistantFace.style.boxShadow = "0 0 50px rgba(0, 229, 255, 0.7)";
 
   try {
-    const reply = await askOpenAI(message);
+    const reply = await askGemini(message);
     addMessage(reply, "assistant");
   } catch (error) {
     addMessage(`Error: ${error.message}`, "assistant");
   } finally {
     statusText.textContent = getSavedApiKey()
-      ? "JARVIS activated. Ask me anything."
-      : "Enter your OpenAI API key to activate JARVIS.";
+      ? "JARVIS activated with Gemini. Ask me anything."
+      : "Enter your Gemini API key to activate JARVIS.";
 
     assistantFace.style.boxShadow = "0 0 35px rgba(0, 229, 255, 0.35)";
   }
@@ -151,14 +158,14 @@ saveKeyBtn.addEventListener("click", function () {
   const key = apiKeyInput.value.trim();
 
   if (!key) {
-    alert("Please enter your OpenAI API key.");
+    alert("Please enter your Gemini API key.");
     return;
   }
 
   saveApiKey(key);
   updateStatus();
   closeSettings();
-  addMessage("API key saved in this browser. JARVIS is ready.", "assistant");
+  addMessage("Gemini API key saved in this browser. JARVIS is ready.", "assistant");
 });
 
 document.querySelectorAll(".action-btn").forEach(function (button) {
